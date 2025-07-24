@@ -1,7 +1,6 @@
 package utils
 
 object Config {
-
   // The local directory containing this repository
   val projectDir :String = "/Users/teo/Universita/Magistrale/BIG_DATA/lab-cse-24-25"
   // The name of the shared bucket on AWS S3 to read datasets

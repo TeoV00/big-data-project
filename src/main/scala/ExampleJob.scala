@@ -8,17 +8,13 @@ object ExampleJob {
 
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder.appName("Sample Spark job").getOrCreate()
-
-    if(args.length == 0){
+    if (args.length == 0) {
       println("The first parameter should indicate the deployment mode (\"local\" or \"remote\")")
-      return
+    } else {
+      val deploymentMode = args(0)
+      val myRdd = spark.sparkContext.textFile(Commons.getDatasetPath(deploymentMode, inputFile))
+      // The output directory should NOT exist
+      myRdd.flatMap(_.split(" ")).map(_.toUpperCase).saveAsTextFile(Commons.getDatasetPath(deploymentMode, outputDir))
     }
-
-    val deploymentMode = args(0)
-
-    val myRdd = spark.sparkContext.textFile(Commons.getDatasetPath(deploymentMode, inputFile))
-    // The output directory should NOT exist
-    myRdd.flatMap(_.split(" ")).map(_.toUpperCase).saveAsTextFile(Commons.getDatasetPath(deploymentMode,outputDir))
   }
-
 }

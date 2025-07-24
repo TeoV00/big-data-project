@@ -2,7 +2,7 @@ plugins {
     scala
     application
     alias(libs.plugins.shadow)
-//    alias(libs.plugins.scala.extras)
+    alias(libs.plugins.scala.extras)
 }
 
 repositories {
