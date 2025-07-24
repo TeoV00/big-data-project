@@ -21,4 +21,3 @@ application {
 tasks.withType<Jar> {
     isZip64 = true
 }
-
