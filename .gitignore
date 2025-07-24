@@ -1,4 +1,7 @@
 .gradle
 .idea
+.metals
+big-data-dataset-exam
 
 build
+.DS_Store
