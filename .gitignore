@@ -1,7 +1,15 @@
 .gradle
 .idea
+.vscode
 .metals
+.bsp
+.bloop
 big-data-dataset-exam
-
+dataset/*
+!.gitkeep
+.venv
 build
+target
 .DS_Store
+.ipynb_checkpoints
+.kotlin

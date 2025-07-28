@@ -1,0 +1,5 @@
+findspark
+jupyter
+spylon-kernel
+pandas
+matplotlib
