@@ -1,6 +1,6 @@
-# Big Data Project: Google Local Reviews
+# Big Data Project: Google Local Reviews 🇺🇸 🗺️ 📈
 
-This repository hosts the code for the Big Data Project on [Google Local Reviews](https://mcauleylab.ucsd.edu/public_datasets/gdrive/googlelocal/#sample-review).
+This repository hosts the code for the Big Data Project exam @ UniBo on [Google Local Reviews](https://mcauleylab.ucsd.edu/public_datasets/gdrive/googlelocal/#sample-review).
 
 This Dataset contains review information on Google map (ratings, text, images, etc.), business metadata (address, geographical info, descriptions, category information, price, open hours, and MISC info), and links (relative businesses) up to Sep 2021 in the United States.
 
@@ -20,13 +20,13 @@ We focus on the reviews and metadata of businesses in these states.
 - `resp`: business response to the review including unix time and text of the response;
   - `time`: time of the response (unix time);
   - `text`: text of the response;
-- ➰ **`gmap_id`: ID of the business**;
+- **[➰ FK] `gmap_id`: ID of the business**;
 
 ### Metadata
 
 - `name`: name of the business;
 - `address`: address of the business;
-- ➰ **`gmap_id`: ID of the business**;
+- **[➰ PK] `gmap_id`: ID of the business**;
 - `description`: description of the business;
 - `latitude`: latitude of the business;
 - `longitude`: longitude of the business;
@@ -66,7 +66,13 @@ In detail:
   - average rating 3.5-4.5: "Recommended"
   - average rating > 4.5: "Highly recommended"
 
-## Other information
+## Devos
+
+### How to get the dataset?
+
+- Download from [here](https://mcauleylab.ucsd.edu/public_datasets/gdrive/googlelocal/#complete-data) all the `ndjson` files;
+  - only California, New York, and Texas are used in this project;
+- Merge together reviews files with `cat`.
 
 ### Dataset Sample
 
@@ -82,3 +88,17 @@ pv -s 50G reviews.ndjson | awk 'BEGIN{srand(42)} rand()<=0.01 {print}' > sample.
 - install from requirements.txt
 - make sure to install: `python -m spylon_kernel install --user`
 - to open a jupyter notebook: `jupyter notebook`
+
+## References
+
+- [_UCTopic: Unsupervised Contrastive Learning for Phrase Representations and Topic Mining_](https://aclanthology.org/2022.acl-long.426.pdf).
+
+  Jiacheng Li, Jingbo Shang, Julian McAuley
+
+  Annual Meeting of the Association for Computational Linguistics (ACL), 2022
+
+- [_Personalized Showcases: Generating Multi-Modal Explanations for Recommendations_](https://arxiv.org/pdf/2207.00422)
+
+  An Yan, Zhankui He, Jiacheng Li, Tianyang Zhang, Julian Mcauley
+
+  The 46th International ACM SIGIR Conference on Research and Development in Information Retrieval (SIGIR), 2023
