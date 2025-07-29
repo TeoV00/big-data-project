@@ -21,3 +21,7 @@ application {
 tasks.withType<Jar> {
     isZip64 = true
 }
+
+tasks.withType<ScalaCompile>().configureEach {
+    scalaCompileOptions.additionalParameters.addAll(listOf("-explaintypes"))
+}
