@@ -4,7 +4,7 @@ This repository hosts the code for the Big Data Project exam @ UniBo on [Google 
 
 This Dataset contains review information on Google map (ratings, text, images, etc.), business metadata (address, geographical info, descriptions, category information, price, open hours, and MISC info), and links (relative businesses) up to Sep 2021 in the United States.
 
-Our analysis is limited to the most three important states: California, New York, and Texas.
+Our analysis is limited to the following states: Alabama, Mississippi, New Hampshire, New Mexico and Washington.
 We focus on the reviews and metadata of businesses in these states.
 
 ## Dataset
@@ -70,17 +70,16 @@ In detail:
 
 ### How to get the dataset?
 
+UniBo member? You can download full dataset from [here](https://liveunibo-my.sharepoint.com/:f:/g/personal/luca_tassinari10_studio_unibo_it/ErdSkAIdiHlAqnXVcEfHHMYBJxc80u6gVmfz6fmBMwCN_A?e=0cXkhT).
+
 - Download from [here](https://mcauleylab.ucsd.edu/public_datasets/gdrive/googlelocal/#complete-data) all the `ndjson` files;
-  - only California, New York, and Texas are used in this project;
-- Merge together reviews files with `cat`.
-- Get rid of reviews < 2019 (we've limited resources with academic AWS account :():
+  - only Alabama, Mississippi, New Hampshire, New Mexico and Washington are used in this project;
+- Merge together reviews files with `cat`, like `cat reviews-*.ndjson > reviews.ndjson`;
+- Get rid of reviews < 2015 (`1420070400000` unix epoch time corresponds to `2015-01-01 00:00:00 UTC`):
 
-  - `1546300800000` unix epoch time corresponds to `2019-01-01 00:00:00 UTC`;
-  - Command:
-
-    ```bash
-    pv -l review-New_York.json | jq -c 'select(.time != null and .time > 1546300800000)' > review-New_York-stripped.ndjson
-    ```
+  ```bash
+  pv -l reviews.ndjson | jq -c 'select(.time != null and .time > 1420070400000)' > reviews.ndjson
+  ```
 
 ### Dataset Sample
 
@@ -93,7 +92,7 @@ pv -l reviews.ndjson | awk 'BEGIN{srand(42)} rand()<=0.01 {print}' > sample.ndjs
 ### Jupyter Notebooks
 
 - Python 3.11 version
-- install from requirements.txt
+- install from `requirements.txt`
 - make sure to install: `python -m spylon_kernel install --user`
 - to open a jupyter notebook: `jupyter notebook`
 
