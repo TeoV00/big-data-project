@@ -73,13 +73,21 @@ In detail:
 - Download from [here](https://mcauleylab.ucsd.edu/public_datasets/gdrive/googlelocal/#complete-data) all the `ndjson` files;
   - only California, New York, and Texas are used in this project;
 - Merge together reviews files with `cat`.
+- Get rid of reviews < 2019 (we've limited resources with academic AWS account :():
+
+  - `1546300800000` unix epoch time corresponds to `2019-01-01 00:00:00 UTC`;
+  - Command:
+
+    ```bash
+    pv -l review-New_York.json | jq -c 'select(.time != null and .time > 1546300800000)' > review-New_York-stripped.ndjson
+    ```
 
 ### Dataset Sample
 
 Dataset sample is obtained using the following command:
 
 ```bash
-pv -s 50G reviews.ndjson | awk 'BEGIN{srand(42)} rand()<=0.01 {print}' > sample.ndjson
+pv -l reviews.ndjson | awk 'BEGIN{srand(42)} rand()<=0.01 {print}' > sample.ndjson
 ```
 
 ### Jupyter Notebooks
