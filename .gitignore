@@ -10,7 +10,9 @@ dataset/*
 .venv
 build
 target
+project
 bin
 .DS_Store
 .ipynb_checkpoints
 .kotlin
+.env

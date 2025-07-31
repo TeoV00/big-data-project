@@ -1,7 +1,5 @@
-
 plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "0.10.0"
 }
 
-rootProject.name = "big-data-project"
-
+rootProject.name = "google-local-reviews-analysis"

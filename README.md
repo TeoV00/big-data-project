@@ -72,6 +72,8 @@ In detail:
 
 UniBo member? You can download full dataset from [here](https://liveunibo-my.sharepoint.com/:f:/g/personal/luca_tassinari10_studio_unibo_it/ErdSkAIdiHlAqnXVcEfHHMYBJxc80u6gVmfz6fmBMwCN_A?e=0cXkhT).
 
+Otherwise:
+
 - Download from [here](https://mcauleylab.ucsd.edu/public_datasets/gdrive/googlelocal/#complete-data) all the `ndjson` files;
   - only Alabama, Mississippi, New Hampshire, New Mexico and Washington are used in this project;
 - Merge together reviews files with `cat`, like `cat reviews-*.ndjson > reviews.ndjson`;
@@ -95,6 +97,47 @@ pv -l reviews.ndjson | awk 'BEGIN{srand(42)} rand()<=0.01 {print}' > sample.ndjs
 - install from `requirements.txt`
 - make sure to install: `python -m spylon_kernel install --user`
 - to open a jupyter notebook: `jupyter notebook`
+
+### Cluster operations
+
+To create a new AWS profile create a `.env` file in the project root with the following content:
+
+```plaintext
+ACCESS_KEY_ID=<access_key_id>
+SECRET_ACCESS_KEY=<secret_access_key>
+SESSION_TOKEN=<session_token>
+```
+
+and run
+
+```bash
+./gradlew createProfile
+```
+
+Or, **alternatively**:
+
+```bash
+./gradlew createProfile -PaccessKeyId=<access_key_id> -PsecretAccessKey=<secret_access_key> -PsessionToken=<session_token>
+```
+
+This command will create a new profile named with the same project name.
+
+#### Dataset load
+
+```bash
+# from the project root
+aws s3api list-buckets --profile <profile-name> # list buckets
+aws s3api create-bucket --bucket google-local-reviews-analysis --profile <profile-name> # create new bucket
+# copy metadata ndjson file
+aws s3 cp ./dataset/metadata.ndjson s3://google-local-reviews-analysis/dataset/metadata.ndjson --profile <profile-name>
+# load reviews ndjson file
+aws s3 cp ./dataset/reviews.ndjson s3://google-local-reviews-analysis/dataset/reviews.ndjson --profile <profile-name>
+```
+
+### Useful links
+
+- [Spark documentation](https://spark.apache.org/docs/latest/api/scala/index.html)
+- [RDD programming guide](https://spark.apache.org/docs/latest/rdd-programming-guide.html)
 
 ## References
 

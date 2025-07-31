@@ -2,7 +2,10 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.process.ProcessForkOptions
 import java.io.File
+import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KClass
+import kotlin.reflect.KProperty
+import kotlin.toString
 
 object DotenvUtils {
 
@@ -22,6 +25,21 @@ object DotenvUtils {
         }
     }
 
+    fun String.toScreamingSnakeCaseEnvKey(): String = replace(Regex("([a-z])([A-Z])"), "$1_$2")
+        .replace("-", "_")
+        .uppercase()
+
+
+    fun Project.envOrProperty(): ReadOnlyProperty<Any?, String> =
+        object : ReadOnlyProperty<Any?, String> {
+            override fun getValue(thisRef: Any?, property: KProperty<*>): String {
+                val name = property.name
+                return dotenv?.get(name.toScreamingSnakeCaseEnvKey())
+                    ?: findProperty(name)?.toString()
+                    ?: error("Error: '$name' is not set in .env or as a Gradle project property (-P$name=value)")
+            }
+        }
+
     interface DotEnv {
 
         /** The `*.env` file instance. */
@@ -29,6 +47,9 @@ object DotenvUtils {
 
         /** @return a map environment variables key-value pairs. */
         fun variables(): Map<String, String>
+
+        /** @return the value associated to the given [key] in the dotenv file or `null` if not found. */
+        operator fun get(key: String): String? = variables()[key]
 
         companion object {
             fun from(file: File): DotEnv = DotEnvImpl(file)

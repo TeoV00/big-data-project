@@ -1,0 +1,47 @@
+name: Continuous Integration
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ ubuntu-24.04, macos-14, windows-2025 ]
+        jvm-version: [ 17, 21 ]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Set up JDK ${{ matrix.jvm-version }}
+        uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.jvm-version }}
+      - name: Assemble main and test classes
+        run: ./gradlew classes testClasses
+      - name: Test and Check
+        uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08 # v3
+        with:
+          max_attempts: 2
+          retry_on: error
+          timeout_minutes: 30
+          command: ./gradlew check
+      - name: Generate fatjar
+        run: ./gradlew shadowJar
+
+  success:
+    needs:
+      - build
+    if: >- # run if at least one needed job has failed or all needed jobs have not been cancelled
+      always() && (
+        contains(join(needs.*.result, ','), 'failure')
+        || !contains(join(needs.*.result, ','), 'cancelled')
+      )
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Verify no failures occurred in needed jobs
+        # if there are failures, false is executed and the job fails.
+        run: ${{ !contains(join(needs.*.result, ','), 'failure') }}
