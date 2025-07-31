@@ -7,6 +7,23 @@ This Dataset contains review information on Google map (ratings, text, images, e
 Our analysis is limited to the following states: Alabama, Mississippi, New Hampshire, New Mexico and Washington.
 We focus on the reviews and metadata of businesses in these states.
 
+1. [Dataset](#dataset)
+   1. [Reviews](#reviews)
+   2. [Metadata](#metadata)
+2. [Jobs](#jobs)
+   1. [Job 1](#job-1)
+   2. [Job 2](#job-2)
+3. [Devos](#devos)
+   1. [How to get the dataset?](#how-to-get-the-dataset)
+   2. [Dataset Sample](#dataset-sample)
+   3. [Jupyter Notebooks](#jupyter-notebooks)
+   4. [Cluster operations](#cluster-operations)
+      1. [AWS profile](#aws-profile)
+      2. [Dataset load](#dataset-load)
+      3. [AWS EMR cluster creation](#aws-emr-cluster-creation)
+   5. [Useful links](#useful-links)
+4. [References](#references)
+
 ## Dataset
 
 ### Reviews
@@ -88,7 +105,7 @@ Otherwise:
 Dataset sample is obtained using the following command:
 
 ```bash
-pv -l reviews.ndjson | awk 'BEGIN{srand(42)} rand()<=0.01 {print}' > sample.ndjson
+pv -l reviews.ndjson | awk 'BEGIN{srand(42)} rand()<=0.05 {print}' > sample.ndjson
 ```
 
 ### Jupyter Notebooks
@@ -100,9 +117,11 @@ pv -l reviews.ndjson | awk 'BEGIN{srand(42)} rand()<=0.01 {print}' > sample.ndjs
 
 ### Cluster operations
 
+#### AWS profile
+
 To create a new AWS profile create a `.env` file in the project root with the following content:
 
-```plaintext
+```env
 ACCESS_KEY_ID=<access_key_id>
 SECRET_ACCESS_KEY=<secret_access_key>
 SESSION_TOKEN=<session_token>
@@ -133,6 +152,22 @@ aws s3 cp ./dataset/metadata.ndjson s3://google-local-reviews-analysis/dataset/m
 # load reviews ndjson file
 aws s3 cp ./dataset/reviews.ndjson s3://google-local-reviews-analysis/dataset/reviews.ndjson --profile <profile-name>
 ```
+
+#### AWS EMR cluster creation
+
+Add to the previously created `.env` file the following content:
+
+```env
+KEY_PAIR_PATH=<path_to_your_key_pair>
+```
+
+and run
+
+```bash
+./gradlew createCluster
+```
+
+This task depends upon the `createProfile` task, so no need to run it separately.
 
 ### Useful links
 
