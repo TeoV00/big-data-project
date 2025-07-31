@@ -1,9 +1,16 @@
 package utils
 
+import java.io.File
+
 object Config {
 
   /** The local directory containing this repository. */
-  val projectDir: String = System.getProperty("user.dir")
+  val projectDir: File = new File(System.getProperty("user.dir"))
+
+  /** The directory containing the datasets. */
+  val datasetsPath: String = "/dataset"
+
+  val outputDirPath: String = "/output"
 
   /** The name of the shared bucket on AWS S3 to read datasets. */
   val s3sharedBucketName: String = "unibo-bd2425-egallinucci"

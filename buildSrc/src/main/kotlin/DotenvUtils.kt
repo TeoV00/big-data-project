@@ -67,7 +67,7 @@ object DotenvUtils {
         override fun variables(): Map<String, String> = file
             .readLines()
             .filter { it.isNotBlank() && !it.startsWith(COMMENT_SYMBOL) }
-            .associate { it.split(KEY_VALUE_SEPARATOR).let { (key, value) -> key to value } }
+            .associate { it.split(KEY_VALUE_SEPARATOR, limit = 2).let { (key, value) -> key to value } }
 
         private companion object {
             const val EXTENSION_NAME = ".env"
