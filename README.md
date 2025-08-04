@@ -111,7 +111,7 @@ pv -l reviews.ndjson | awk 'BEGIN{srand(42)} rand()<=0.05 {print}' > sample.ndjs
 ### Jupyter Notebooks
 
 - Python 3.11 version
-- install from `requirements.txt`
+- install from `requirements.txt`: `pip install -r requirements.txt`
 - make sure to install: `python -m spylon_kernel install --user`
 - to open a jupyter notebook: `jupyter notebook`
 

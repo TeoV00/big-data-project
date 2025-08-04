@@ -3,3 +3,5 @@ jupyter
 spylon-kernel
 pandas
 matplotlib
+seaborn
+plotly
