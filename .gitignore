@@ -16,3 +16,4 @@ bin
 .ipynb_checkpoints
 .kotlin
 .env
+output
