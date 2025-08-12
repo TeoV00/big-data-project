@@ -16,7 +16,6 @@ object Job1 {
   }
 
   import org.apache.spark.sql.{ SaveMode, SparkSession }
-  import org.apache.spark.storage.StorageLevel
   import data.DataResolver
   import data.ReviewsUtils._
   import java.util.concurrent.TimeUnit
@@ -27,12 +26,16 @@ object Job1 {
     val data = new DataResolver()
     import spark.sqlContext.implicits._ // needed to save as CSV, see `toDF` method
 
-    val businessesStates = data.metadataRdd.map(b => b._3 -> toState(b._2))
+    val businessesStates = data.metadataRdd
+      .filter(_._2.isDefined) // leave only businesses with a defined address
+      .map(b => b._3 -> toState(b._2))
 
     val reviewsInfo = data.reviewsRdd
       .filter(_._4.isDefined) // filter out reviews without a rating
-      .map { case (_, _, time, rating, _, _, resp, id) =>
-        (time.toLocalDateTime.getYear, id) -> (time, rating.get, resp)
+      .map { case (_, _, time, rating, _, _, resp, id) => id -> (time, rating.get, resp) }
+      .join(businessesStates) // [(gmap_id, ((timestamp, rating, response), state))*]
+      .map { case (id, ((time, rating, resp), state)) =>
+        (time.toLocalDateTime.getYear, id, state) -> (time, rating, resp)
       }
       .aggregateByKey((0.0, 0, 0L, 0))( // (ratings sum, #responses, sum of response time differences, #reviews)
         (acc, v) => {
@@ -54,15 +57,15 @@ object Job1 {
           if (numResponses > 0) TimeUnit.MILLISECONDS.toHours(sumResponseTimes / numResponses)
           else Double.PositiveInfinity,
         )
-      } // [((year, gmap_id), (avg_rating, response_rate, avg_response_time))*]
+      } // [((year, gmap_id, state), (avg_rating, response_rate, avg_response_time))*]
       .mapValues { case (avgRating, responseRate, avgResponseTime) =>
         (avgRating, responseRate, avgResponseTime, responseStrategy(responseRate, avgResponseTime))
-      } // [((year, gmap_id), (avg_rating, response_rate, avg_response_time, response_strategy))*]
+      } // [((year, gmap_id, state), (avg_rating, response_rate, avg_response_time, response_strategy))*]
 
     val outcome = reviewsInfo
-      .map { case ((year, id), (avgRating, _, _, responseStrategy)) => id -> (year, responseStrategy, avgRating) }
-      .join(businessesStates) // [(gmap_id, ((year, response_strategy, avg_rating), state))*]
-      .map { case (_, ((year, responseStrategy, avgRating), state)) => (year, state, responseStrategy) -> avgRating }
+      .map { case ((year, _, state), (avgRating, _, _, responseStrategy)) =>
+        (year, state, responseStrategy) -> avgRating
+      }
       .aggregateByKey((0.0, 0))((acc, v) => (acc._1 + v, acc._2 + 1), (r1, r2) => (r1._1 + r2._1, r1._2 + r2._2))
       .mapValues { case (sumRatings, totalBusinesses) => sumRatings / totalBusinesses }
 
@@ -82,7 +85,8 @@ object Job1 {
     val data = new DataResolver()
     import spark.sqlContext.implicits._ // needed to save as CSV, see `toDF` method
 
-    val partitioner = new org.apache.spark.HashPartitioner(12)
+    val partitions = 24
+    val partitioner = new org.apache.spark.HashPartitioner(partitions)
 
     val businessesStates = data.metadataRdd
       .filter(_._2.isDefined) // leave only businesses with a defined address
@@ -92,7 +96,7 @@ object Job1 {
     val reviewsInfo = data.reviewsRdd
       .filter(_._4.isDefined) // filter out reviews without a rating
       .map { case (_, _, time, rating, _, _, resp, id) =>
-        (time.toLocalDateTime.getYear, id) -> (time, rating.get, resp)
+        (time.toLocalDateTime.getYear, id) -> (time, rating.get, resp.map(_._1))
       }
       .aggregateByKey((0.0, 0, 0L, 0))( // (ratings sum, #responses, sum of response time differences, #reviews)
         (acc, v) => {
@@ -101,7 +105,7 @@ object Job1 {
           (
             sumRatings + rating,
             numResponses + (if (response.isDefined) 1 else 0),
-            sumResponseTimes + (if (response.isDefined) response.get._1.getTime - time.getTime else 0L),
+            sumResponseTimes + (if (response.isDefined) response.get.getTime - time.getTime else 0L),
             totalReviews + 1,
           )
         },
@@ -119,6 +123,7 @@ object Job1 {
           responseStrategy(avgResponseRate, avgResponseTime),
         )
       } // [((year, gmap_id), (avg_rating, response_rate, avg_response_time, response_strategy))*]
+      .coalesce(partitions)
 
     val outcome = reviewsInfo
       .map { case ((year, id), (avgRating, _, _, responseStrategy)) => id -> (year, responseStrategy, avgRating) }
@@ -132,7 +137,7 @@ object Job1 {
 
     outcome
       .map { case ((year, state, responseStrategy), avgRating) => (year, state, responseStrategy, avgRating) }
-      .coalesce(1, shuffle = true)
+      .coalesce(1)
       .toDF("year", "state", "response_strategy", "avg_rating")
       .write
       .format("csv")

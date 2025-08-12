@@ -1,7 +1,5 @@
 package data
 
-import java.io.File
-
 import scala.language.postfixOps
 
 import data.Schemas._
