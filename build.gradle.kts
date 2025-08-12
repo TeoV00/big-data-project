@@ -21,8 +21,9 @@ application {
     mainClass = "org.example.App"
 }
 
-tasks.withType<Jar> {
+tasks.withType<Jar>().configureEach {
     isZip64 = true
+    dependsOn(tasks.check)
 }
 
 tasks.withType<ScalaCompile>().configureEach {
