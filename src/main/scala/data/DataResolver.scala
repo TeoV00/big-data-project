@@ -4,7 +4,7 @@ import scala.language.postfixOps
 
 import data.Schemas._
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.StringType
+import org.apache.spark.sql.types.{ ArrayType, MapType, StringType }
 import org.apache.spark.sql.{ Dataset, SparkSession }
 import utils.{ Commons, Config }
 
@@ -38,12 +38,20 @@ class DataResolver(implicit val spark: SparkSession) {
     .withColumn("category", when(col("category") isNull, array()) otherwise col("category"))
     .withColumn("hours", when(col("hours") isNull, array()) otherwise col("hours"))
     .withColumn("relative_results", when(col("relative_results") isNull, array()) otherwise col("relative_results"))
+    .withColumn(
+      "MISC",
+      when(
+        col("MISC") isNotNull,
+        col("MISC").cast(MapType(StringType, ArrayType(StringType))),
+      ) otherwise typedLit(Map.empty[String, Seq[String]]),
+    )
     .as[Metadata]
 
   // Unfortunately, it seems that Spark does not support case classes in RDDs. It throws ArrayStoreException
   // when trying to collect the RDD... [see also [here](https://github.com/adtech-labs/spylon-kernel/issues/40)]
   def reviewsRdd = reviewsDataset.rdd
-    .map(Review.unapply(_).get)
+    .map(Review.unapply)
+    .map(_.get)
     .map { case review @ (_, _, _, _, _, _, resp, _) => review.copy(_7 = resp.map(Response.unapply(_).get)) }
 
   def metadataRdd = metadataDataset.rdd.map(Metadata.unapply).map(_.get)
