@@ -38,7 +38,7 @@ object Job2 {
       .map { case ((gmap_id, year), c) => gmap_id -> (year, c._2 / c._1) }
 
     val results = data.metadataRdd
-      .filter(_._10 != null)
+      .filter(r => Option(r._10).exists(_.nonEmpty))
       .flatMap(r => r._7.map(category => r._3 -> (category, toState(r._2), r._10)))
       .join(businessAvgRating)
       .map { case (_, ((category, state, price), (year, avgRate))) =>
@@ -55,7 +55,7 @@ object Job2 {
         (category, state, price, year, avgRate, suggestion)
       }
       .coalesce(1)
-      .toDF("category", "state", "price", "year", "avg_rating", "business suggestion")
+      .toDF("category", "state", "price", "year", "avg_rating", "business_suggestion")
       .write
       .format("csv")
       .option("header", "true")
