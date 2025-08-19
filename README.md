@@ -169,6 +169,30 @@ and run
 
 This task depends upon the `createProfile` task, so no need to run it separately.
 
+### Deploy jobs on AWS EMR cluster
+
+Add a new Intellij Run Configuration with `Run` -> `Edit Configurations` -> `+` -> `Spark Submit Cluster`:
+- Name: Spark Cluster
+- Region: us-east-1
+- Remote Target: Add EMR connection
+- Authentication type: Profile from credentials file
+- Profile name: (the one you set in 101-1.d)
+- Click on "Test connection" to verify: if you cannot connect or there are no deployed cluster, the connection will not be saved
+- Enter a new SSH Configuration
+- Host: the address of the primary node of the cluster, i.e., the MasterPublicDnsName
+- Username: hadoop
+- Authentication type: Key pair
+- Private key file: point to your `.ppk`
+- Test the connection
+- Application: point to the .jar file inside the `build/libs` folder of this repository; if you don't find it, build the project with `./gradlew build.
+- Class: `jobs.Job1` or `jobs.Job2` depending on the job you want to run
+- Run arguments: ```basic```, ```optimized``` or any other argument you want to pass to the job
+- Before launch: Upload Files Through SFTP
+- Result submit command:
+```bash
+/bin/spark-submit --master yarn --deploy-mode cluster --class <fully-qualified-class> --name "Spark Cluster" $HOME/<jar> <args>
+```
+
 ### Useful links
 
 - [Spark documentation](https://spark.apache.org/docs/latest/api/scala/index.html)
