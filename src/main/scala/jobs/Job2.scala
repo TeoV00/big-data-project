@@ -28,7 +28,7 @@ object Job2 {
 
     val businessAvgRating = data.reviewsRdd
       .filter(_._4.isDefined)
-      .map { case r =>
+      .map { r =>
         val rating = r._4.get
         val gmap_id = r._8
         val year = r._3.toLocalDateTime.getYear
@@ -60,7 +60,7 @@ object Job2 {
       .format("csv")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
-      .save(Commons.getDatasetPath("remote", s"${Config.outputDirPath}/job2-output"))
+      .save(s"s3a://google-local-reviews-analysis-viola/${Config.outputDirPath}/job2-output")
   }
 
   private def optimized(): Unit = {
