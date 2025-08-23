@@ -26,6 +26,60 @@ object Job2 {
     val data = new DataResolver()
     import spark.sqlContext.implicits._ // needed to save as CSV, see `toDF` method
 
+    val metadata = data.metadataRdd
+      .map { case (_, address, gmap_id, _, _, _, category, _, _, price, _, _, _, _, _) =>
+        gmap_id -> (category, toState(address), price)
+      }
+
+    val reviewsData = data.reviewsRdd
+      .map { case (_, _, time, rating, _, _, _, gmap_id) =>
+        gmap_id -> (time.toLocalDateTime.getYear, rating)
+      }
+
+    val joinData = reviewsData
+      .join(metadata)
+      .filter(_._2._1._2.isDefined)
+      .filter(_._2._2._3.isDefined)
+      .map { case (gmap_id, ((year, rating), (category, address, price))) =>
+        gmap_id -> (year, rating.get, category, address, price)
+      }
+
+    val results = joinData
+      .map { case (gmap_id, (year, rating, categories, state, price)) =>
+        (gmap_id, year, categories, state, price) -> rating
+      }
+      .groupByKey()
+      .flatMap { case ((gmap_id, year, categories, state, price), rate) =>
+        categories.map(category => (category, state, price, year) -> rate.sum / rate.size)
+      }
+      .groupByKey()
+      .map { case (key, avgRates) =>
+        val avgRate = avgRates.sum / avgRates.size
+        key -> (avgRate, ratingToSuggestion(avgRate))
+      }
+
+    results
+      .map { case ((category, state, price, year), (avgRate, suggestion)) =>
+        (category, state, price, year, avgRate, suggestion)
+      }
+      .coalesce(1)
+      .toDF("category", "state", "price", "year", "avg_rating", "business suggestion")
+      .write
+      .format("csv")
+      .option("header", "true")
+      .mode(SaveMode.Overwrite)
+      .save(s"s3a://google-local-reviews-analysis-viola/${Config.outputDirPath}/job2-output")
+  }
+
+  private def optimized(): Unit = {
+    implicit val spark: SparkSession = SparkSession.builder.appName("Job2 Optimized").getOrCreate()
+    import spark.sqlContext.implicits._ // needed to save as CSV, see `toDF` method
+
+    val data = new DataResolver()
+
+    val partitions = 18
+    val partitioner = new org.apache.spark.HashPartitioner(partitions)
+
     val businessAvgRating = data.reviewsRdd
       .filter(_._4.isDefined)
       .map { r =>
@@ -34,19 +88,23 @@ object Job2 {
         val year = r._3.toLocalDateTime.getYear
         (gmap_id, year) -> (1, rating)
       }
-      .reduceByKey((a, b) => (a._1 + b._1, a._2 + b._2))
+      .reduceByKey((a, b) => (a._1 + b._1, a._2 + b._2)) // count reviews and sum rating value
       .map { case ((gmap_id, year), c) => gmap_id -> (year, c._2 / c._1) }
+      .partitionBy(partitioner)
 
     val results = data.metadataRdd
-      .filter(r => Option(r._10).exists(_.nonEmpty))
-      .flatMap(r => r._7.map(category => r._3 -> (category, toState(r._2), r._10)))
+      .filter(r => r._10.isDefined)
+      .flatMap(r =>
+        r._7.map(category => r._3 -> (category, toState(r._2), r._10)),
+      ) // (gmap_id, (category, state, price))
+      .partitionBy(partitioner)
       .join(businessAvgRating)
       .map { case (_, ((category, state, price), (year, avgRate))) =>
-        (category, state, price, year) -> avgRate
+        (category, state, price, year) -> (avgRate, 1)
       }
-      .groupByKey()
-      .map { case (key, ratings) =>
-        val avgRate = ratings.sum / ratings.size
+      .reduceByKey((a, b) => (a._1 + b._1, a._2 + b._2))
+      .map { case (key, r) =>
+        val avgRate = r._1 / r._2
         (key, f"${avgRate}%.2f", ratingToSuggestion(avgRate))
       }
 
@@ -61,21 +119,6 @@ object Job2 {
       .option("header", "true")
       .mode(SaveMode.Overwrite)
       .save(s"s3a://google-local-reviews-analysis-viola/${Config.outputDirPath}/job2-output")
-  }
-
-  private def optimized(): Unit = {
-    implicit val spark: SparkSession = SparkSession.builder.appName("Job2 Optimized").getOrCreate()
-    val data = new DataResolver()
-    import spark.sqlContext.implicits._ // needed to save as CSV, see `toDF` method
-
-    //   outcome.map { case ((year, state, responseStrategy), avgRating) => (year, state, responseStrategy, avgRating) }
-    //     .coalesce(1, shuffle = true)
-    //     .toDF("category", "state", "price", "year", "avg_rating", "business suggestion")
-    //     .write
-    //     .format("csv")
-    //     .option("header", "true")
-    //     .mode(SaveMode.Overwrite)
-    //     .save(Commons.getDatasetPath("remote", s"${Config.outputDirPath}/job2-optimized-output"))
   }
 
   def ratingToSuggestion(rating: Double): String =
