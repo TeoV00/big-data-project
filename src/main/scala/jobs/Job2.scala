@@ -28,7 +28,7 @@ object Job2 {
 
     val metadata = data.metadataRdd
       .map { case (_, address, gmap_id, _, _, _, category, _, _, price, _, _, _, _, _) =>
-        gmap_id -> (category, toState(address), price)
+        gmap_id -> (category, toState(address), withSymbol(price, "*"))
       }
 
     val reviewsData = data.reviewsRdd
@@ -95,7 +95,7 @@ object Job2 {
     val results = data.metadataRdd
       .filter(r => r._10.isDefined)
       .flatMap(r =>
-        r._7.map(category => r._3 -> (category, toState(r._2), r._10)),
+        r._7.map(category => r._3 -> (category, toState(r._2), withSymbol(r._10, "*"))),
       ) // (gmap_id, (category, state, price))
       .partitionBy(partitioner)
       .join(businessAvgRating)
@@ -129,5 +129,9 @@ object Job2 {
       case r if r > 4.5 => "Highly recommended"
       case _ => "Undefined"
     }
+
+  /** This function converts price string into a new one with custom symbol */
+  def withSymbol(price: Option[String], symbol: String): Option[String] =
+    price.map(s => List.fill(s.length)(symbol).mkString)
 
 }
